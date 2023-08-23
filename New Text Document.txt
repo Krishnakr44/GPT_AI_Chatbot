@@ -1,0 +1,91 @@
+import { useState } from "react";
+import { Configuration, OpenAIApi } from "openai";
+
+const configuration = new Configuration({
+  organization: "org-GUb3m6qyQijuzphP5p2PeOd8",
+  apiKey: "53Frw6MkZ0fXUNwjvKCBT3BlbkFJc0cn8ZraSTZO2CaRJ5XZ"
+  // apiKey: process.env.REACT_APP_OPENAI_API_KEY, // Use 'REACT_APP_' prefix for environment variables in React
+});
+const openai = new OpenAIApi(configuration);
+
+function App() {
+  const [message, setMessage] = useState("");
+  const [chats, setChats] = useState([]);
+  const [isTyping, setIsTyping] = useState(false);
+
+  const { scrollTo } = window;
+  
+  const chat = async (e, message) => {
+    e.preventDefault();
+
+    if (!message) return;
+    setIsTyping(true);
+    scrollTo(0, 0);
+
+    let msgs = [...chats]; // Create a new array instead of modifying the original state array
+
+    msgs.push({ role: "user", content: message });
+    setChats(msgs);
+
+    setMessage("");
+
+    try {
+      const response = await openai.createChatCompletion({
+        model: "gpt-3.5-turbo",
+        messages: [
+          {
+            role: "system",
+            content: "You are a EbereGPT. You can help with graphic design tasks",
+          },
+          ...chats,
+        ],
+      });
+      console.log("API Response:", response); // Log the full API response
+      msgs.push(response.data.choices[0].message);
+      setChats(msgs);
+      setIsTyping(false);
+      scrollTo(0, 0);
+      console.log("Response:", response); // Log the response for debugging
+    } catch (error) {
+      console.error("API Error:", error); // Log the error object for debugging
+    }
+  };
+
+  return (
+    <main>
+      <h1>Chat AI Tutorial</h1>
+
+      <section>
+        {chats && chats.length
+          ? chats.map((chat, index) => (
+              <p key={index} className={chat.role === "user" ? "user_msg" : ""}>
+                <span>
+                  <b>{chat.role.toUpperCase()}</b>
+                </span>
+                <span>:</span>
+                <span>{chat.content}</span>
+              </p>
+            ))
+          : ""}
+      </section>
+
+      <div className={isTyping ? "" : "hide"}>
+        <p>
+          <i>{isTyping ? "Typing" : ""}</i>
+        </p>
+      </div>
+
+      <form action="" onSubmit={(e) => chat(e, message)}>
+        <input
+          type="text"
+          name="message"
+          value={message}
+          placeholder="Type a message here and hit Enter..."
+          onChange={(e) => setMessage(e.target.value)}
+        />
+      </form>
+    </main>
+  );
+}
+
+export default App;
